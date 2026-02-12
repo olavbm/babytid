@@ -408,6 +408,47 @@
       background: #fdf8f9;
     }
 
+    .birth-date-input {
+      margin-top: 1rem;
+      padding-top: 1rem;
+      border-top: 1px solid rgba(196, 107, 122, 0.2);
+    }
+
+    .birth-date-input label {
+      display: block;
+      font-size: 0.8rem;
+      color: #999;
+      margin-bottom: 0.3rem;
+    }
+
+    .birth-date-input input {
+      padding: 0.4rem 0.6rem;
+      border: 2px solid #e8b4b8;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      outline: none;
+      background: #fff;
+    }
+
+    .birth-date-input input:focus {
+      border-color: #c46b7a;
+      box-shadow: 0 0 0 3px rgba(196, 107, 122, 0.15);
+    }
+
+    .status-pregnant {
+      background: #5a9a9a;
+    }
+
+    .status-born {
+      background: #c46b7a;
+    }
+
+    .baby-age-display {
+      font-size: 0.85rem;
+      color: #c46b7a;
+      margin-top: 0.25rem;
+    }
+
     .legend {
       display: flex;
       justify-content: center;
@@ -539,9 +580,10 @@
   <header>
     <h1>Babytid</h1>
     <p style="color: #7a9a9a; font-size: 0.9rem; font-weight: 400;">Svangerskapskalender for Norge</p>
-    <div class="date-selector">
-      <label for="currentWeek">Du er i uke:</label>
-      <input type="number" id="currentWeek" min="0" max="42" value="8">
+    <div class="date-selector" id="dateSelector">
+      <label for="dueDate">Termin:</label>
+      <input type="date" id="dueDate">
+      <div id="statusDisplay" class="current-week-display"></div>
     </div>
     <div class="legend">
       <div class="legend-item"><span class="legend-dot medical"></span> Helse</div>
@@ -556,23 +598,104 @@
   <div class="timeline" id="timeline"></div>
 
   <script>
-    let currentWeek = 8;
-    const weekInput = document.getElementById('currentWeek');
+    // State
+    let dueDate = null;
+    let birthDate = null;
+
+    // DOM elements
+    const dueDateInput = document.getElementById('dueDate');
+    const statusDisplay = document.getElementById('statusDisplay');
     const timeline = document.getElementById('timeline');
     const keyDatesContainer = document.getElementById('keyDates');
 
-    // Calculate the date for a given pregnancy week based on current week
-    function getDateForWeek(targetWeek) {
+    // Calculate current pregnancy week from due date
+    function getCurrentWeek() {
+      if (!dueDate) return 0;
       const today = new Date();
-      const weeksFromNow = targetWeek - currentWeek;
-      const targetDate = new Date(today);
-      targetDate.setDate(targetDate.getDate() + (weeksFromNow * 7));
-      return targetDate;
+      today.setHours(0, 0, 0, 0);
+      const due = new Date(dueDate);
+      due.setHours(0, 0, 0, 0);
+      const daysUntilDue = Math.ceil((due - today) / (1000 * 60 * 60 * 24));
+      const weeksUntilDue = daysUntilDue / 7;
+      return Math.round(40 - weeksUntilDue);
     }
 
-    // Calculate due date from current week
+    // Calculate the date for a given pregnancy week
+    function getDateForWeek(targetWeek) {
+      if (!dueDate) return new Date();
+      const due = new Date(dueDate);
+      const weeksFromDue = 40 - targetWeek;
+      return addDays(due, -weeksFromDue * 7);
+    }
+
+    // Get due date
     function getDueDate() {
-      return getDateForWeek(40);
+      return dueDate ? new Date(dueDate) : new Date();
+    }
+
+    // Get actual birth date or estimated (due date)
+    function getActualBirthDate() {
+      return birthDate ? new Date(birthDate) : getDueDate();
+    }
+
+    // Check if baby is born
+    function isBabyBorn() {
+      if (birthDate) return true;
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const due = getDueDate();
+      due.setHours(0, 0, 0, 0);
+      return today >= due;
+    }
+
+    // Get baby's age in days
+    function getBabyAgeDays() {
+      const birth = getActualBirthDate();
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      birth.setHours(0, 0, 0, 0);
+      return Math.floor((today - birth) / (1000 * 60 * 60 * 24));
+    }
+
+    // Format baby age for display
+    function formatBabyAge(days) {
+      if (days < 0) return null;
+      if (days === 0) return "Nyfødt";
+      if (days === 1) return "1 dag gammel";
+      if (days < 7) return `${days} dager gammel`;
+      if (days < 14) return "1 uke gammel";
+      if (days < 30) return `${Math.floor(days / 7)} uker gammel`;
+      if (days < 60) return "1 måned gammel";
+      if (days < 365) return `${Math.round(days / 30)} måneder gammel`;
+      const years = Math.floor(days / 365);
+      const remainingMonths = Math.round((days % 365) / 30);
+      if (years === 1 && remainingMonths === 0) return "1 år gammel";
+      if (remainingMonths === 0) return `${years} år gammel`;
+      if (years === 1) return `1 år og ${remainingMonths} mnd gammel`;
+      return `${years} år og ${remainingMonths} mnd gammel`;
+    }
+
+    // Update status display in header
+    function updateStatusDisplay() {
+      if (!dueDate) {
+        statusDisplay.textContent = '';
+        statusDisplay.className = 'current-week-display';
+        return;
+      }
+
+      if (birthDate || isBabyBorn()) {
+        const ageDays = getBabyAgeDays();
+        const ageText = formatBabyAge(ageDays);
+        if (ageText) {
+          statusDisplay.textContent = ageText;
+          statusDisplay.className = 'current-week-display status-born';
+        }
+      } else {
+        const week = getCurrentWeek();
+        const daysLeft = daysUntil(getDueDate());
+        statusDisplay.textContent = `Uke ${week}`;
+        statusDisplay.className = 'current-week-display status-pregnant';
+      }
     }
 
     // Format date in Norwegian
@@ -623,10 +746,10 @@
       return result;
     }
 
-    // Get date X days after birth
+    // Get date X days after birth (uses actual birth date if set)
     function getDateAfterBirth(daysAfter) {
-      const due = getDueDate();
-      return addDays(due, daysAfter);
+      const birth = getActualBirthDate();
+      return addDays(birth, daysAfter);
     }
 
     // Format days after birth as readable text
@@ -1111,16 +1234,39 @@
         if (weekData.isBirth) {
           const birthDivider = document.createElement('div');
           birthDivider.className = 'birth-divider';
+          const birthDateValue = birthDate ? birthDate.toISOString().split('T')[0] : '';
+          const displayDate = birthDate ? formatDateFull(birthDate) : `Termin: ${formatDateFull(dates.due)}`;
+
           birthDivider.innerHTML = `
             <div class="confetti-container">
               ${Array.from({length: 18}, (_, i) => `<div class="confetti"></div>`).join('')}
             </div>
             <div class="birth-divider-content">
               <div class="birth-divider-emoji">👶</div>
-              <div class="birth-divider-title">Fødsel!</div>
-              <div class="birth-divider-subtitle">${formatDateFull(dates.due)}</div>
+              <div class="birth-divider-title">${birthDate ? 'Født!' : 'Fødsel'}</div>
+              <div class="birth-divider-subtitle">${displayDate}</div>
+              <div class="birth-date-input">
+                <label for="birthDate">${birthDate ? 'Fødselsdato:' : 'Registrer fødselsdato:'}</label>
+                <input type="date" id="birthDateInput" value="${birthDateValue}">
+              </div>
             </div>
           `;
+
+          // Add event listener for birth date input
+          const birthInput = birthDivider.querySelector('#birthDateInput');
+          birthInput.addEventListener('change', (e) => {
+            if (e.target.value) {
+              birthDate = new Date(e.target.value + 'T00:00:00');
+              localStorage.setItem('babytid_birthDate', e.target.value);
+            } else {
+              birthDate = null;
+              localStorage.removeItem('babytid_birthDate');
+            }
+            updateStatusDisplay();
+            renderTimeline();
+            renderKeyDates();
+          });
+
           // Trigger confetti on scroll into view
           const observer = new IntersectionObserver((entries) => {
             entries.forEach(entry => {
@@ -1200,9 +1346,10 @@
         }
 
         // Regular pregnancy week cards
-        if (weekData.week === currentWeek) {
+        const currentWeekNum = getCurrentWeek();
+        if (weekData.week === currentWeekNum) {
           card.classList.add('current');
-        } else if (weekData.week < currentWeek) {
+        } else if (weekData.week < currentWeekNum) {
           card.classList.add('past');
         }
 
@@ -1267,28 +1414,39 @@
       }
     }
 
-    function updateFromWeek() {
-      currentWeek = parseInt(weekInput.value) || 8;
-      currentWeek = Math.max(0, Math.min(42, currentWeek));
-      weekInput.value = currentWeek;
-      localStorage.setItem('babytid_week', currentWeek);
+    function updateFromDueDate() {
+      const value = dueDateInput.value;
+      if (value) {
+        dueDate = new Date(value + 'T00:00:00');
+        localStorage.setItem('babytid_dueDate', value);
+      } else {
+        dueDate = null;
+        localStorage.removeItem('babytid_dueDate');
+      }
+      updateStatusDisplay();
       renderKeyDates();
       renderTimeline();
       scrollToCurrentWeek();
     }
 
-    // Load saved week
-    const savedWeek = localStorage.getItem('babytid_week');
-    if (savedWeek) {
-      currentWeek = parseInt(savedWeek);
-      weekInput.value = currentWeek;
+    // Load saved dates
+    const savedDueDate = localStorage.getItem('babytid_dueDate');
+    if (savedDueDate) {
+      dueDate = new Date(savedDueDate + 'T00:00:00');
+      dueDateInput.value = savedDueDate;
     }
 
-    weekInput.addEventListener('change', updateFromWeek);
+    const savedBirthDate = localStorage.getItem('babytid_birthDate');
+    if (savedBirthDate) {
+      birthDate = new Date(savedBirthDate + 'T00:00:00');
+    }
+
+    dueDateInput.addEventListener('change', updateFromDueDate);
 
     const header = document.querySelector('header');
     let isUserScrolling = true;
 
+    updateStatusDisplay();
     renderKeyDates();
     renderTimeline();
     scrollToCurrentWeek();
@@ -1296,7 +1454,7 @@
     window.addEventListener('scroll', () => {
       header.classList.toggle('scrolled', window.scrollY > 50);
 
-      // Update current week based on scroll position
+      // Update active card based on scroll position
       if (isUserScrolling) {
         const cards = document.querySelectorAll('.week-card');
         const headerHeight = header.offsetHeight;
@@ -1317,36 +1475,9 @@
         });
 
         if (closestCard) {
-          const weekNum = closestCard.querySelector('.week-number');
-          if (weekNum) {
-            const match = weekNum.textContent.match(/\d+/);
-            if (match) {
-              const newWeek = parseInt(match[0]);
-              if (newWeek !== currentWeek) {
-                currentWeek = newWeek;
-                weekInput.value = currentWeek;
-                localStorage.setItem('babytid_week', currentWeek);
-                renderKeyDates();
-
-                // Update card styling
-                cards.forEach(c => {
-                  const cWeekNum = c.querySelector('.week-number');
-                  if (cWeekNum) {
-                    const cMatch = cWeekNum.textContent.match(/\d+/);
-                    if (cMatch) {
-                      const cWeek = parseInt(cMatch[0]);
-                      c.classList.remove('current', 'past');
-                      if (cWeek === currentWeek) {
-                        c.classList.add('current');
-                      } else if (cWeek < currentWeek) {
-                        c.classList.add('past');
-                      }
-                    }
-                  }
-                });
-              }
-            }
-          }
+          // Remove current from all cards and add to closest
+          cards.forEach(c => c.classList.remove('current'));
+          closestCard.classList.add('current');
         }
       }
     });
