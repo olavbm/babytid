@@ -1,0 +1,1355 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Babytid - Svangerskapskalender for Norge</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      background: #faf8f5;
+      min-height: 100vh;
+      color: #3d3d3d;
+      line-height: 1.7;
+      font-size: 15px;
+    }
+
+    header {
+      text-align: center;
+      padding: 2rem 1rem;
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(10px);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: 0 1px 8px rgba(0, 0, 0, 0.04);
+      transition: padding 0.3s ease;
+    }
+
+    header.scrolled {
+      padding: 0.75rem 1rem;
+    }
+
+    header.scrolled h1,
+    header.scrolled > p,
+    header.scrolled .legend {
+      display: none;
+    }
+
+    header.scrolled .date-selector {
+      margin-top: 0;
+    }
+
+    h1 {
+      font-size: 1.8rem;
+      font-weight: 600;
+      color: #2d5a5a;
+      margin-bottom: 0.25rem;
+      letter-spacing: -0.5px;
+    }
+
+    .date-selector {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 1rem;
+      margin-top: 1rem;
+      flex-wrap: wrap;
+    }
+
+    .date-selector label {
+      font-size: 0.9rem;
+      color: #666;
+    }
+
+    .date-selector input {
+      padding: 0.5rem 0.75rem;
+      border: 2px solid #d4e4e4;
+      border-radius: 10px;
+      font-size: 0.95rem;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      background: #fff;
+    }
+
+    .date-selector input:focus {
+      border-color: #5a9a9a;
+      box-shadow: 0 0 0 3px rgba(90, 154, 154, 0.15);
+    }
+
+    .current-week-display {
+      background: #5a9a9a;
+      color: white;
+      padding: 0.4rem 1rem;
+      border-radius: 20px;
+      font-weight: 600;
+      font-size: 0.9rem;
+    }
+
+    .timeline {
+      max-width: 700px;
+      margin: 0 auto;
+      padding: 2rem 1rem 4rem;
+      position: relative;
+    }
+
+    .timeline::before {
+      content: '';
+      position: absolute;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 2px;
+      height: 100%;
+      background: linear-gradient(to bottom, #e8e4df, #d9d4ce, #e8e4df);
+      border-radius: 2px;
+    }
+
+    .week-card {
+      position: relative;
+      margin-bottom: 2rem;
+      opacity: 0.6;
+      transform: scale(0.95) translateY(8px);
+      transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    .week-card.current {
+      opacity: 1;
+      transform: scale(1) translateY(0);
+    }
+
+    .week-card.current .card-content {
+      border-color: #5a9a9a;
+      box-shadow:
+        0 12px 32px rgba(90, 154, 154, 0.25),
+        0 0 0 1px rgba(90, 154, 154, 0.1);
+      background: linear-gradient(135deg, #fff 0%, #f8fcfc 100%);
+    }
+
+    .week-card.past {
+      opacity: 0.5;
+    }
+
+    .week-marker {
+      position: absolute;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 12px;
+      height: 12px;
+      background: #d9d4ce;
+      border-radius: 50%;
+      border: 3px solid #fff;
+      z-index: 1;
+      transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    .week-card.current .week-marker {
+      background: #5a9a9a;
+      width: 18px;
+      height: 18px;
+      box-shadow:
+        0 0 0 6px rgba(90, 154, 154, 0.15),
+        0 0 20px rgba(90, 154, 154, 0.3);
+      animation: pulse 2s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% {
+        box-shadow:
+          0 0 0 6px rgba(90, 154, 154, 0.15),
+          0 0 20px rgba(90, 154, 154, 0.3);
+      }
+      50% {
+        box-shadow:
+          0 0 0 10px rgba(90, 154, 154, 0.08),
+          0 0 30px rgba(90, 154, 154, 0.4);
+      }
+    }
+
+    .card-content {
+      background: #fff;
+      border-radius: 12px;
+      padding: 1.25rem 1.5rem;
+      margin-left: calc(50% + 30px);
+      width: calc(50% - 40px);
+      border: 1px solid rgba(0, 0, 0, 0.04);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+      transition: all 0.3s ease;
+    }
+
+    .week-card:nth-child(even) .card-content {
+      margin-left: 10px;
+      margin-right: calc(50% + 30px);
+    }
+
+    .week-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin-bottom: 0.35rem;
+    }
+
+    .week-number {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      color: #5a9a9a;
+      font-weight: 600;
+    }
+
+    .week-date {
+      font-size: 0.75rem;
+      color: #999;
+    }
+
+    .week-title {
+      font-size: 1.05rem;
+      font-weight: 600;
+      color: #2d4a4a;
+      margin-bottom: 0.75rem;
+    }
+
+    .event {
+      background: #faf9f7;
+      border-radius: 8px;
+      padding: 0.7rem 0.9rem;
+      margin-bottom: 0.5rem;
+      border-left: 3px solid;
+    }
+
+    .event:last-child {
+      margin-bottom: 0;
+    }
+
+    .event.medical {
+      border-color: #d4847a;
+      background: #fdf8f7;
+    }
+
+    .event.admin {
+      border-color: #6a9fb5;
+      background: #f6fafb;
+    }
+
+    .event.info {
+      border-color: #7ab57a;
+      background: #f7faf6;
+    }
+
+    .event.deadline {
+      border-color: #c9a45c;
+      background: #fdfbf6;
+    }
+
+    .event-title {
+      font-weight: 600;
+      font-size: 0.9rem;
+      margin-bottom: 0.3rem;
+      color: #3d3d3d;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      flex-wrap: wrap;
+    }
+
+    .event-desc {
+      font-size: 0.85rem;
+      color: #666;
+      line-height: 1.5;
+    }
+
+    .event-meta {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-top: 0.4rem;
+      flex-wrap: wrap;
+    }
+
+    .event-date {
+      font-size: 0.8rem;
+      color: #5a9a9a;
+      font-weight: 500;
+    }
+
+    .trimester-divider {
+      text-align: center;
+      margin: 2.5rem 0;
+      position: relative;
+    }
+
+    .trimester-divider span {
+      background: #faf8f5;
+      padding: 0.5rem 1.25rem;
+      font-size: 0.8rem;
+      color: #5a9a9a;
+      font-weight: 600;
+      position: relative;
+      z-index: 1;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+    }
+
+    /* Birth divider with celebration */
+    .birth-divider {
+      text-align: center;
+      margin: 3rem 0;
+      position: relative;
+      padding: 2rem 0;
+    }
+
+    .birth-divider-content {
+      background: linear-gradient(135deg, #fff5f5 0%, #fff0f5 50%, #f5f0ff 100%);
+      border: 2px solid #e8b4b8;
+      border-radius: 20px;
+      padding: 1.5rem 2rem;
+      display: inline-block;
+      position: relative;
+      z-index: 2;
+      box-shadow: 0 8px 32px rgba(232, 180, 184, 0.3);
+    }
+
+    .birth-divider-emoji {
+      font-size: 2.5rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .birth-divider-title {
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: #c46b7a;
+      margin-bottom: 0.25rem;
+    }
+
+    .birth-divider-subtitle {
+      font-size: 0.9rem;
+      color: #999;
+    }
+
+    /* Confetti animation */
+    .confetti-container {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      overflow: hidden;
+    }
+
+    .confetti {
+      position: absolute;
+      width: 10px;
+      height: 10px;
+      opacity: 0;
+    }
+
+    .birth-divider:hover .confetti,
+    .birth-divider.animate .confetti {
+      animation: confetti-fall 3s ease-out forwards;
+    }
+
+    @keyframes confetti-fall {
+      0% {
+        opacity: 1;
+        transform: translateY(-20px) rotate(0deg);
+      }
+      100% {
+        opacity: 0;
+        transform: translateY(150px) rotate(720deg);
+      }
+    }
+
+    .confetti:nth-child(1) { left: 10%; animation-delay: 0s; background: #ff6b6b; border-radius: 50%; }
+    .confetti:nth-child(2) { left: 20%; animation-delay: 0.1s; background: #ffd93d; border-radius: 2px; }
+    .confetti:nth-child(3) { left: 30%; animation-delay: 0.2s; background: #6bcb77; border-radius: 50%; }
+    .confetti:nth-child(4) { left: 40%; animation-delay: 0.15s; background: #4d96ff; border-radius: 2px; }
+    .confetti:nth-child(5) { left: 50%; animation-delay: 0.25s; background: #ff6bb5; border-radius: 50%; }
+    .confetti:nth-child(6) { left: 60%; animation-delay: 0.1s; background: #a66cff; border-radius: 2px; }
+    .confetti:nth-child(7) { left: 70%; animation-delay: 0.3s; background: #ff9f43; border-radius: 50%; }
+    .confetti:nth-child(8) { left: 80%; animation-delay: 0.05s; background: #26de81; border-radius: 2px; }
+    .confetti:nth-child(9) { left: 90%; animation-delay: 0.2s; background: #fd79a8; border-radius: 50%; }
+    .confetti:nth-child(10) { left: 15%; animation-delay: 0.35s; background: #74b9ff; border-radius: 2px; }
+    .confetti:nth-child(11) { left: 25%; animation-delay: 0.4s; background: #ffeaa7; border-radius: 50%; }
+    .confetti:nth-child(12) { left: 35%; animation-delay: 0.15s; background: #81ecec; border-radius: 2px; }
+    .confetti:nth-child(13) { left: 45%; animation-delay: 0.25s; background: #fab1a0; border-radius: 50%; }
+    .confetti:nth-child(14) { left: 55%; animation-delay: 0.3s; background: #a29bfe; border-radius: 2px; }
+    .confetti:nth-child(15) { left: 65%; animation-delay: 0.1s; background: #55efc4; border-radius: 50%; }
+    .confetti:nth-child(16) { left: 75%; animation-delay: 0.2s; background: #fdcb6e; border-radius: 2px; }
+    .confetti:nth-child(17) { left: 85%; animation-delay: 0.35s; background: #e17055; border-radius: 50%; }
+    .confetti:nth-child(18) { left: 5%; animation-delay: 0.4s; background: #00b894; border-radius: 2px; }
+
+    /* Post-birth styling */
+    .week-card.post-birth .week-number {
+      color: #c46b7a;
+    }
+
+    .week-card.post-birth.current .card-content {
+      border-color: #c46b7a;
+      box-shadow:
+        0 12px 32px rgba(196, 107, 122, 0.25),
+        0 0 0 1px rgba(196, 107, 122, 0.1);
+    }
+
+    .week-card.post-birth.current .week-marker {
+      background: #c46b7a;
+      box-shadow:
+        0 0 0 6px rgba(196, 107, 122, 0.15),
+        0 0 20px rgba(196, 107, 122, 0.3);
+    }
+
+    .event.milestone {
+      border-color: #c46b7a;
+      background: #fdf8f9;
+    }
+
+    .legend {
+      display: flex;
+      justify-content: center;
+      gap: 1.5rem;
+      flex-wrap: wrap;
+      margin-top: 1rem;
+      font-size: 0.8rem;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .legend-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 3px;
+    }
+
+    .legend-dot.medical { background: #d4847a; }
+    .legend-dot.admin { background: #6a9fb5; }
+    .legend-dot.info { background: #7ab57a; }
+    .legend-dot.deadline { background: #c9a45c; }
+    .legend-dot.milestone { background: #c46b7a; }
+
+    .oslo-badge {
+      background: #e8f4f4;
+      color: #2d5a5a;
+      font-size: 0.7rem;
+      padding: 0.15rem 0.4rem;
+      border-radius: 4px;
+      margin-left: 0.5rem;
+      font-weight: 500;
+    }
+
+    .key-dates {
+      max-width: 700px;
+      margin: 0 auto;
+      padding: 1rem;
+    }
+
+    .key-dates-grid {
+      display: flex;
+      gap: 0.5rem;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      padding-bottom: 0.25rem;
+    }
+
+    .key-date-card {
+      background: #fff;
+      border-radius: 8px;
+      padding: 0.6rem 0.8rem;
+      border-left: 3px solid;
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+      flex-shrink: 0;
+      min-width: 120px;
+    }
+
+    .key-date-card.termin { border-color: #d4847a; }
+    .key-date-card.nav { border-color: #6a9fb5; }
+    .key-date-card.arbeidsgiver { border-color: #c9a45c; }
+    .key-date-card.barnehage { border-color: #7ab57a; }
+
+    .key-date-label {
+      font-size: 0.65rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: #888;
+      margin-bottom: 0.15rem;
+    }
+
+    .key-date-value {
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: #2d4a4a;
+    }
+
+    .key-date-sub {
+      margin-top: 0.2rem;
+    }
+
+    .countdown {
+      display: inline-block;
+      background: #f0f7f7;
+      padding: 0.2rem 0.5rem;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      color: #5a9a9a;
+      font-weight: 500;
+    }
+
+    .countdown.past {
+      background: #f5f0f0;
+      color: #999;
+    }
+
+    .countdown.soon {
+      background: #fff3e0;
+      color: #c9a45c;
+    }
+
+    .event-fixed-date {
+      font-size: 0.8rem;
+      color: #666;
+    }
+
+    @media (max-width: 600px) {
+      .timeline::before {
+        left: 20px;
+      }
+
+      .week-marker {
+        left: 20px;
+      }
+
+      .card-content,
+      .week-card:nth-child(even) .card-content {
+        margin-left: 50px;
+        margin-right: 0;
+        width: calc(100% - 60px);
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Babytid</h1>
+    <p style="color: #7a9a9a; font-size: 0.9rem; font-weight: 400;">Svangerskapskalender for Norge</p>
+    <div class="date-selector">
+      <label for="currentWeek">Du er i uke:</label>
+      <input type="number" id="currentWeek" min="0" max="42" value="8">
+    </div>
+    <div class="legend">
+      <div class="legend-item"><span class="legend-dot medical"></span> Helse</div>
+      <div class="legend-item"><span class="legend-dot admin"></span> Administrasjon</div>
+      <div class="legend-item"><span class="legend-dot info"></span> Informasjon</div>
+      <div class="legend-item"><span class="legend-dot deadline"></span> Frist</div>
+      <div class="legend-item"><span class="legend-dot milestone"></span> Milepæl</div>
+    </div>
+  </header>
+
+  <div class="key-dates" id="keyDates"></div>
+  <div class="timeline" id="timeline"></div>
+
+  <script>
+    let currentWeek = 8;
+    const weekInput = document.getElementById('currentWeek');
+    const timeline = document.getElementById('timeline');
+    const keyDatesContainer = document.getElementById('keyDates');
+
+    // Calculate the date for a given pregnancy week based on current week
+    function getDateForWeek(targetWeek) {
+      const today = new Date();
+      const weeksFromNow = targetWeek - currentWeek;
+      const targetDate = new Date(today);
+      targetDate.setDate(targetDate.getDate() + (weeksFromNow * 7));
+      return targetDate;
+    }
+
+    // Calculate due date from current week
+    function getDueDate() {
+      return getDateForWeek(40);
+    }
+
+    // Format date in Norwegian
+    function formatDate(date) {
+      const months = ['jan', 'feb', 'mar', 'apr', 'mai', 'jun', 'jul', 'aug', 'sep', 'okt', 'nov', 'des'];
+      return `${date.getDate()}. ${months[date.getMonth()]}`;
+    }
+
+    function formatDateFull(date) {
+      const months = ['januar', 'februar', 'mars', 'april', 'mai', 'juni', 'juli', 'august', 'september', 'oktober', 'november', 'desember'];
+      return `${date.getDate()}. ${months[date.getMonth()]} ${date.getFullYear()}`;
+    }
+
+    function formatDateWithYear(date) {
+      const months = ['jan', 'feb', 'mar', 'apr', 'mai', 'jun', 'jul', 'aug', 'sep', 'okt', 'nov', 'des'];
+      return `${date.getDate()}. ${months[date.getMonth()]} ${date.getFullYear()}`;
+    }
+
+    function daysUntil(date) {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const target = new Date(date);
+      target.setHours(0, 0, 0, 0);
+      return Math.ceil((target - today) / (1000 * 60 * 60 * 24));
+    }
+
+    function getCountdownText(days) {
+      if (days < 0) return { text: `${Math.abs(days)} dager siden`, class: 'past' };
+      if (days === 0) return { text: 'I dag!', class: 'soon' };
+      if (days <= 14) return { text: `om ${days} dager`, class: 'soon' };
+      if (days <= 7 * 8) return { text: `om ${Math.ceil(days / 7)} uker`, class: '' };
+      return { text: `om ${Math.round(days / 30)} mnd`, class: '' };
+    }
+
+    function addDays(date, days) {
+      const result = new Date(date);
+      result.setDate(result.getDate() + days);
+      return result;
+    }
+
+    function addWeeks(date, weeks) {
+      return addDays(date, weeks * 7);
+    }
+
+    function addMonths(date, months) {
+      const result = new Date(date);
+      result.setMonth(result.getMonth() + months);
+      return result;
+    }
+
+    // Get date X days after birth
+    function getDateAfterBirth(daysAfter) {
+      const due = getDueDate();
+      return addDays(due, daysAfter);
+    }
+
+    // Format days after birth as readable text
+    function formatPostBirthAge(days) {
+      if (days === 0) return "Fødsel";
+      if (days < 7) return `Dag ${days}`;
+      if (days < 30) return `${Math.floor(days / 7)} uke${days >= 14 ? 'r' : ''}`;
+      if (days < 365) return `${Math.round(days / 30)} mnd`;
+      const years = Math.floor(days / 365);
+      const remainingMonths = Math.round((days % 365) / 30);
+      if (remainingMonths === 0) return `${years} år`;
+      return `${years} år ${remainingMonths} mnd`;
+    }
+
+    // Calculate all key dates
+    function getKeyDates() {
+      const due = getDueDate();
+      const today = new Date();
+
+      // Svangerskapspermisjon can start 3 weeks before due (week 37)
+      const permisjonStart = getDateForWeek(37);
+
+      // NAV: Søk 4-6 uker før permisjon starter
+      const navSøknadAnbefalt = addWeeks(permisjonStart, -5);
+
+      // Employer notification: 12 weeks before for >1 year leave
+      const arbeidsgiverVarsel = addWeeks(permisjonStart, -12);
+
+      // Foreldrepenger end (49 weeks at 100% or 59 at 80%)
+      const permisjon49Slutt = addWeeks(due, 49);
+      const permisjon59Slutt = addWeeks(due, 59);
+
+      // Barnehage
+      const birthYear = due.getFullYear();
+      const birthMonth = due.getMonth();
+      // If born before August, apply by March same year
+      // If born August or later, apply by March next year
+      let barnehageFristYear = birthMonth < 7 ? birthYear : birthYear + 1;
+      const barnehageFrist = new Date(barnehageFristYear, 2, 1);
+      const barnehageOppstart = new Date(barnehageFristYear, 7, 15);
+
+      // Baby's 1 year birthday (relevant for permisjon planning)
+      const baby1År = addDays(due, 365);
+
+      return {
+        due,
+        permisjonStart,
+        navSøknadAnbefalt,
+        arbeidsgiverVarsel,
+        permisjon49Slutt,
+        permisjon59Slutt,
+        barnehageFrist,
+        barnehageOppstart,
+        baby1År
+      };
+    }
+
+    function renderKeyDates() {
+      const dates = getKeyDates();
+
+      const cards = [
+        {
+          type: 'termin',
+          label: 'Termin',
+          value: formatDate(dates.due),
+          sub: getCountdownText(daysUntil(dates.due))
+        },
+        {
+          type: 'arbeidsgiver',
+          label: 'Varsel jobb',
+          value: formatDate(dates.arbeidsgiverVarsel),
+          sub: getCountdownText(daysUntil(dates.arbeidsgiverVarsel))
+        },
+        {
+          type: 'nav',
+          label: 'Søk NAV',
+          value: formatDate(dates.navSøknadAnbefalt),
+          sub: getCountdownText(daysUntil(dates.navSøknadAnbefalt))
+        },
+        {
+          type: 'barnehage',
+          label: 'Barnehage',
+          value: formatDate(dates.barnehageFrist),
+          sub: getCountdownText(daysUntil(dates.barnehageFrist))
+        }
+      ];
+
+      keyDatesContainer.innerHTML = `
+        <div class="key-dates-grid">
+          ${cards.map(card => `
+            <div class="key-date-card ${card.type}">
+              <div class="key-date-label">${card.label}</div>
+              <div class="key-date-value">${card.value}</div>
+              <div class="key-date-sub">
+                <span class="countdown ${card.sub.class}">${card.sub.text}</span>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      `;
+    }
+
+    // Generate weeks data with calculated dates
+    function getWeeksData() {
+      const dates = getKeyDates();
+
+      return [
+        {
+          week: 0,
+          title: "Befruktning",
+          events: [
+            { type: "info", title: "Uke 0", desc: "Første dag av siste menstruasjon. Svangerskapet regnes fra denne datoen." }
+          ]
+        },
+        {
+          week: 2,
+          title: "Eggløsning og befruktning",
+          events: [
+            { type: "info", title: "Befruktning skjer", desc: "Eggløsning skjer vanligvis rundt dag 14. Befruktning kan skje i løpet av 12-24 timer." }
+          ]
+        },
+        {
+          week: 4,
+          title: "Tidlig graviditet",
+          events: [
+            { type: "info", title: "Positiv test mulig", desc: "Graviditetstest kan vise positivt resultat fra første dag med uteblitt mensen" }
+          ]
+        },
+        {
+          week: 6,
+          title: "Første kontakt",
+          events: [
+            { type: "admin", title: "Kontakt fastlege", desc: "Bestill time for bekreftelse av graviditet" },
+            { type: "admin", title: "Ring helsestasjonen", desc: "Be om å bli tildelt jordmor. Du får første konsultasjon innen en uke." }
+          ]
+        },
+        {
+          week: 8,
+          title: "Første svangerskapskontroll",
+          events: [
+            { type: "medical", title: "Konsultasjon hos jordmor/lege", desc: "Blodprøver (hepatitt B, HIV, syfilis, hemoglobin, jernstatus), blodtrykk, urinprøve, RhD-typing", showDate: true },
+            { type: "info", title: "Helsekort", desc: "Du får helsekort for gravide som følger deg gjennom svangerskapet" }
+          ]
+        },
+        {
+          week: 10,
+          title: "Fosterdiagnostikk tilbys",
+          events: [
+            { type: "medical", title: "NIPT-test (valgfritt)", desc: "Blodprøve for kromosomavvik. Gratis for 35+ år, ellers privat ca. 6000-11000 kr", showDate: true },
+            { type: "info", title: "Tidligste tidspunkt", desc: "NIPT kan tas fra uke 10+0. Anbefales uke 10-11 for svar innen uke 12" }
+          ]
+        },
+        {
+          week: 11,
+          title: "Tidlig ultralyd",
+          events: [
+            { type: "medical", title: "Ultralyd uke 11-14", desc: "Tilbys alle gravide fra 2022. Kombinert med NIPT ved behov (KUB-test)", showDate: true }
+          ]
+        },
+        {
+          week: 12,
+          trimester: 2,
+          title: "Andre trimester begynner",
+          events: [
+            { type: "info", title: "Lavere risiko", desc: "Risiko for spontanabort reduseres betydelig etter uke 12" },
+            { type: "deadline", title: "Informer arbeidsgiver", desc: "Varsle arbeidsgiver senest 12 uker før for permisjon over 1 år", fixedDate: dates.arbeidsgiverVarsel }
+          ]
+        },
+        {
+          week: 14,
+          title: "Svangerskapskontroll",
+          events: [
+            { type: "medical", title: "Kontroll hos jordmor", desc: "Oppfølging, vekt, blodtrykk, urinprøve", showDate: true }
+          ]
+        },
+        {
+          week: 17,
+          title: "Rutineultralyd nærmer seg",
+          events: [
+            { type: "admin", title: "Sjekk innkalling", desc: "Du skal ha fått innkalling til rutineultralyd uke 17-19. Kontakt jordmor hvis ikke." }
+          ]
+        },
+        {
+          week: 18,
+          title: "Rutineultralyd",
+          events: [
+            { type: "medical", title: "Ultralyd uke 17-19", desc: "Detaljert undersøkelse av fosterets organer, morkakeplassering, termin bekreftes", showDate: true },
+            { type: "info", title: "Kjønn", desc: "Kan ofte sees hvis ønskelig" }
+          ]
+        },
+        {
+          week: 20,
+          title: "Halvveis!",
+          events: [
+            { type: "info", title: "Fosterbevegelser", desc: "De fleste kjenner tydelige spark og bevegelser nå" },
+            { type: "medical", title: "Svangerskapskontroll", desc: "Regelmessige kontroller hver 4. uke", showDate: true }
+          ]
+        },
+        {
+          week: 22,
+          title: "Planlegging starter",
+          events: [
+            { type: "admin", title: "NAV foreldrepenger", desc: "Du kan søke fra uke 22. Les om rettigheter på nav.no/foreldrepenger", fixedDate: dates.navSøknadAnbefalt },
+            { type: "admin", title: "Velg fødested", desc: "Begynn å tenke på hvor du vil føde. Jordmor sender henvisning." },
+            dates.barnehageFrist > new Date() ? {
+              type: "deadline",
+              title: "Barnehage søknadsfrist",
+              desc: "Hovedopptak for barnehageplass med oppstart aug/sept. Søk på oslo.kommune.no/barnehage",
+              location: "Oslo",
+              fixedDate: dates.barnehageFrist
+            } : null
+          ].filter(Boolean)
+        },
+        {
+          week: 24,
+          title: "Viktige undersøkelser",
+          events: [
+            { type: "medical", title: "Svangerskapskontroll", desc: "Blodtrykk, symfyse-fundus mål, urinprøve, lytte på hjertelyd", showDate: true },
+            { type: "medical", title: "Kikhostevaksine", desc: "Anbefales fra uke 24. Gratis. Beskytter barnet frem til 3 mnd alder.", showDate: true },
+            { type: "medical", title: "RhD-test", desc: "Rhesus-negative: Blodprøve for å sjekke fosterets blodtype" },
+            { type: "medical", title: "Glukosebelastning", desc: "Tilbys førstegangs­fødende 25+ eller ved risikofaktorer" }
+          ]
+        },
+        {
+          week: 25,
+          title: "Foreldrepermisjon",
+          events: [
+            { type: "admin", title: "Planlegg permisjonen", desc: `Diskuter fordeling med partner. 100%: t.o.m. ${formatDateWithYear(dates.permisjon49Slutt)} (49 uker). 80%: t.o.m. ${formatDateWithYear(dates.permisjon59Slutt)} (59 uker).` },
+            { type: "info", title: "Fedrekvote", desc: "15 uker er forbeholdt far/medmor. Må tas ut, ellers tapes de." }
+          ]
+        },
+        {
+          week: 28,
+          trimester: 3,
+          title: "Tredje trimester",
+          events: [
+            { type: "medical", title: "Svangerskapskontroll", desc: "Kontroller blir hyppigere: hver 2.-4. uke", showDate: true },
+            { type: "medical", title: "Anti-D sprøyte", desc: "Rhesus-negative med RhD-positivt foster får første sprøyte nå" },
+            { type: "admin", title: "Fødselskurs", desc: "Meld deg på kurs. Oslo: ca. 600-1200 kr privat, noen gratis via sykehus" }
+          ]
+        },
+        {
+          week: 30,
+          title: "Forberedelser",
+          events: [
+            { type: "admin", title: "Ammekurs", desc: "Vurder kurs. Gratis på helsestasjon, eller privat." },
+            { type: "info", title: "Babyutstyr", desc: "God tid til å handle inn nødvendig utstyr" }
+          ]
+        },
+        {
+          week: 32,
+          title: "Svangerskapskontroll",
+          events: [
+            { type: "medical", title: "Kontroll hos jordmor", desc: "Fosterstilling, vekst, trivsel, blodtrykk", showDate: true },
+            { type: "admin", title: "Kontakt fødeavdeling", desc: "Få omvisning og informasjon om fødested" }
+          ]
+        },
+        {
+          week: 34,
+          title: "Siste forberedelser",
+          events: [
+            { type: "admin", title: "Pakk fødebag", desc: "Ha klar bag med det du trenger til føde- og barselavdeling" },
+            { type: "deadline", title: "Søk foreldrepenger NÅ", desc: `NAV anbefaler å søke 4-6 uker før. Frist: senest 3 mnd etter fødsel.`, showDate: true },
+            { type: "info", title: "Fosterstilling", desc: "De fleste babyer snur seg hodeleie nå. Seteleie? Snakk med jordmor." }
+          ]
+        },
+        {
+          week: 36,
+          title: "Hyppige kontroller",
+          events: [
+            { type: "medical", title: "Kontroll", desc: "Ukentlige eller annenhver uke kontroller starter", showDate: true },
+            { type: "medical", title: "Posisjon sjekkes", desc: "Bekrefter hodeleie. Seteleie kan kreve spesialistvurdering." },
+            { type: "medical", title: "Anti-D #2", desc: "Rhesus-negative: Andre sprøyte gis nå" },
+            { type: "info", title: "GBS", desc: "Norge screener ikke rutinemessig, men test kan gjøres ved risiko" }
+          ]
+        },
+        {
+          week: 37,
+          title: "Fullbårent - permisjon kan starte",
+          events: [
+            { type: "info", title: "Barnet er klart", desc: "Regnes som fullbårent fra uke 37. Trygt å føde fra nå." },
+            { type: "admin", title: "Svangerskapspermisjon", desc: "3 uker før termin er forbeholdt mor. Du kan starte permisjonen fra nå.", fixedDate: dates.permisjonStart }
+          ]
+        },
+        {
+          week: 38,
+          title: "Vent på tegn",
+          events: [
+            { type: "medical", title: "Svangerskapskontroll", desc: "Tett oppfølging. Ring fødeavdeling ved vannavgang eller regelmessige rier.", showDate: true },
+            { type: "info", title: "Tegn på fødsel", desc: "Slimplugg, uregelmessige rier, lavere magetoppunkt, økt trykk nedover" }
+          ]
+        },
+        {
+          week: 39,
+          title: "Nesten der",
+          events: [
+            { type: "medical", title: "Kontroll", desc: "Fortsatt oppfølging av blodtrykk, fosterlyd, bevegelser", showDate: true },
+            { type: "info", title: "Hvil", desc: "Ta det med ro. Sov og hvil når du kan." }
+          ]
+        },
+        {
+          week: 40,
+          title: "Termin!",
+          events: [
+            { type: "deadline", title: "Termindato", desc: "Bare ca. 5% føder på selve termindatoen. Normalt å føde uke 37-42.", fixedDate: dates.due },
+            { type: "medical", title: "Overtidskontroll", desc: "Ved termin+0 starter tettere oppfølging med kontroll hver 2-3 dag" }
+          ]
+        },
+        {
+          week: 41,
+          title: "Over termin",
+          events: [
+            { type: "medical", title: "Hyppige kontroller", desc: "CTG (hjerteovervåkning), ultralyd for fostervann, generell vurdering", showDate: true },
+            { type: "medical", title: "Igangsetting vurderes", desc: "Diskusjon om induksjon. Vanlig å sette i gang før uke 42." }
+          ]
+        },
+        {
+          week: 42,
+          title: "Igangsetting",
+          events: [
+            { type: "medical", title: "Induksjon", desc: "Fødselen settes vanligvis i gang innen uke 42+0 i Norge", showDate: true }
+          ]
+        },
+        // === FØDSEL === (special marker)
+        { isBirth: true },
+        // Post-birth timeline (daysAfterBirth)
+        {
+          postBirth: true,
+          daysAfterBirth: 0,
+          title: "Babyen er her!",
+          events: [
+            { type: "milestone", title: "Gratulerer!", desc: "Nyt de første øyeblikkene med den nye verdensborger." },
+            { type: "medical", title: "Barselopphold", desc: "1-3 dager på sykehus. Ammestart, hørseltest, blodprøve (nyfødtscreening)." },
+            { type: "admin", title: "Fødselsmelding sendes", desc: "Jordmor/lege sender melding til Skatteetaten. Barnet registreres i Folkeregisteret." }
+          ]
+        },
+        {
+          postBirth: true,
+          daysAfterBirth: 7,
+          title: "Første uke hjemme",
+          events: [
+            { type: "medical", title: "Hjemmebesøk fra jordmor", desc: "Innen 1-3 dager etter hjemkomst. Sjekker amming, navle, vekt og trivsel." },
+            { type: "medical", title: "Hjemmebesøk helsestasjon", desc: "Dag 7-10: Helsesykepleier kommer hjem. Veiing, måling, samtale om den nye hverdagen." },
+            { type: "admin", title: "Barnetrygd", desc: "Innvilges automatisk innen 2 måneder. Du trenger ikke søke." }
+          ]
+        },
+        {
+          postBirth: true,
+          daysAfterBirth: 28,
+          title: "4 uker",
+          events: [
+            { type: "medical", title: "Kontroll på helsestasjon", desc: "Vekt, lengde, hodeomkrets. Samtale om amming, søvn og foreldrerollen." }
+          ]
+        },
+        {
+          postBirth: true,
+          daysAfterBirth: 42,
+          title: "6 uker - stor kontroll",
+          events: [
+            { type: "medical", title: "6-ukerskontroll", desc: "Grundig undersøkelse av baby hos lege: reflekser, hofter, øyne, ører, hud." },
+            { type: "medical", title: "Første vaksine!", desc: "Rotavirus (dråper), DTP-IPV-Hib-HepB (6-i-1), Pneumokokk." },
+            { type: "medical", title: "Barselkontroll for mor", desc: "Sjekk av hvordan kroppen har kommet seg etter fødselen." },
+            { type: "admin", title: "Foreldrepenger", desc: "Aktivitetskrav for mor starter nå (10 ukers fritak for barn født etter 2. aug 2024)." }
+          ]
+        },
+        {
+          postBirth: true,
+          daysAfterBirth: 90,
+          title: "3 måneder",
+          events: [
+            { type: "medical", title: "Helsestasjonskontroll", desc: "Vekst, utvikling, samspill mellom foreldre og barn." },
+            { type: "medical", title: "Vaksiner dose 2", desc: "Rotavirus, DTP-IPV-Hib-HepB, Pneumokokk." }
+          ]
+        },
+        {
+          postBirth: true,
+          daysAfterBirth: 120,
+          title: "4 måneder",
+          events: [
+            { type: "medical", title: "Helsestasjonskontroll", desc: "Oppfølging av vekst og utvikling." }
+          ]
+        },
+        {
+          postBirth: true,
+          daysAfterBirth: 150,
+          title: "5 måneder",
+          events: [
+            { type: "medical", title: "Vaksiner dose 3", desc: "DTP-IPV-Hib-HepB, Pneumokokk (siste rotavirus var ved 3 mnd)." }
+          ]
+        },
+        {
+          postBirth: true,
+          daysAfterBirth: 180,
+          title: "6 måneder",
+          events: [
+            { type: "medical", title: "Helsestasjonskontroll", desc: "Halvårskontroll: syn, hørsel, motorikk, sosial utvikling." },
+            { type: "deadline", title: "Frist: Registrer barnets navn", desc: "Barnets navn må meldes til Skatteetaten innen 6 måneder etter fødsel." },
+            { type: "info", title: "Fast føde", desc: "Mange starter med smaksprøver og grøt nå." }
+          ]
+        },
+        {
+          postBirth: true,
+          daysAfterBirth: 240,
+          title: "8 måneder",
+          events: [
+            { type: "medical", title: "Helsestasjonskontroll", desc: "Oppfølging av motorisk utvikling, kommunikasjon." }
+          ]
+        },
+        {
+          postBirth: true,
+          daysAfterBirth: 300,
+          title: "10 måneder",
+          events: [
+            { type: "medical", title: "Helsestasjonskontroll", desc: "Vurdering av utvikling, ernæring, søvn." }
+          ]
+        },
+        {
+          postBirth: true,
+          daysAfterBirth: 365,
+          title: "1 år! 🎂",
+          events: [
+            { type: "milestone", title: "Gratulerer med ettårsdagen!", desc: "Et helt år som foreldre!" },
+            { type: "medical", title: "12-månederskontroll", desc: "Stor kontroll med lege. Vekst, utvikling, syn, hørsel." },
+            { type: "medical", title: "Vaksiner dose 4", desc: "DTP-IPV-Hib-HepB, Pneumokokk (siste dose av disse)." },
+            { type: "admin", title: "Kontantstøtte", desc: "Kan søkes for barn 1-2 år som ikke går i barnehage med offentlig støtte." },
+            { type: "info", title: "Foreldrepermisjon 100%", desc: "Ved 100% dekningsgrad: Permisjonen nærmer seg slutten (49 uker)." }
+          ]
+        },
+        {
+          postBirth: true,
+          daysAfterBirth: 456,
+          title: "15 måneder",
+          events: [
+            { type: "medical", title: "MMR-vaksine", desc: "Vaksine mot meslinger, kusma og røde hunder." },
+            { type: "medical", title: "Helsestasjonskontroll", desc: "Utvikling, språk, motorikk." }
+          ]
+        },
+        {
+          postBirth: true,
+          daysAfterBirth: 540,
+          title: "17-18 måneder",
+          events: [
+            { type: "medical", title: "Helsestasjonskontroll", desc: "Språkutvikling, sosial utvikling, gangfunksjon." }
+          ]
+        },
+        {
+          postBirth: true,
+          daysAfterBirth: 730,
+          title: "2 år",
+          events: [
+            { type: "medical", title: "2-årskontroll", desc: "Språk, motorikk, sosial utvikling. Siste rutinemessige kontroll før 4 år." },
+            { type: "admin", title: "Kontantstøtte slutter", desc: "Kontantstøtte gis kun til barn mellom 1-2 år." }
+          ]
+        },
+        {
+          postBirth: true,
+          daysAfterBirth: 1095,
+          title: "3 år",
+          events: [
+            { type: "deadline", title: "Frist: Bruk opp foreldrepenger", desc: "Alle foreldrepenger må være tatt ut før barnet fyller 3 år." }
+          ]
+        },
+        {
+          postBirth: true,
+          daysAfterBirth: 1460,
+          title: "4 år",
+          events: [
+            { type: "medical", title: "4-årskontroll", desc: "Stor helseundersøkelse: syn, hørsel, språk, motorikk, sosial utvikling. Siste før skolestart." }
+          ]
+        }
+      ];
+    }
+
+    function renderTimeline() {
+      timeline.innerHTML = '';
+      let lastTrimester = 1;
+      const weeks = getWeeksData();
+      const dates = getKeyDates();
+
+      weeks.forEach((weekData, index) => {
+        // Handle birth divider
+        if (weekData.isBirth) {
+          const birthDivider = document.createElement('div');
+          birthDivider.className = 'birth-divider';
+          birthDivider.innerHTML = `
+            <div class="confetti-container">
+              ${Array.from({length: 18}, (_, i) => `<div class="confetti"></div>`).join('')}
+            </div>
+            <div class="birth-divider-content">
+              <div class="birth-divider-emoji">👶</div>
+              <div class="birth-divider-title">Fødsel!</div>
+              <div class="birth-divider-subtitle">${formatDateFull(dates.due)}</div>
+            </div>
+          `;
+          // Trigger confetti on scroll into view
+          const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+              if (entry.isIntersecting) {
+                birthDivider.classList.add('animate');
+              }
+            });
+          }, { threshold: 0.5 });
+          observer.observe(birthDivider);
+          timeline.appendChild(birthDivider);
+          return;
+        }
+
+        // Handle trimester dividers
+        if (weekData.trimester && weekData.trimester !== lastTrimester) {
+          const divider = document.createElement('div');
+          divider.className = 'trimester-divider';
+          divider.innerHTML = `<span>${weekData.trimester}. trimester</span>`;
+          timeline.appendChild(divider);
+          lastTrimester = weekData.trimester;
+        }
+
+        const card = document.createElement('div');
+        card.className = 'week-card';
+
+        // Handle post-birth cards
+        if (weekData.postBirth) {
+          card.classList.add('post-birth');
+          const postBirthDate = getDateAfterBirth(weekData.daysAfterBirth);
+          const daysPast = daysUntil(postBirthDate);
+
+          if (daysPast <= 0 && daysPast > -30) {
+            card.classList.add('current');
+          } else if (daysPast > 0) {
+            // Future post-birth event
+          } else {
+            card.classList.add('past');
+          }
+
+          const ageLabel = formatPostBirthAge(weekData.daysAfterBirth);
+          const weekDateStr = formatDateWithYear(postBirthDate);
+
+          card.innerHTML = `
+            <div class="week-marker"></div>
+            <div class="card-content">
+              <div class="week-header">
+                <div class="week-number">${ageLabel}</div>
+                <div class="week-date">${weekDateStr}</div>
+              </div>
+              <div class="week-title">${weekData.title}</div>
+              ${weekData.events.map(event => {
+                const locationBadge = event.location ? `<span class="oslo-badge">${event.location}</span>` : '';
+
+                let metaHtml = '';
+                const days = daysUntil(postBirthDate);
+                const countdown = getCountdownText(days);
+                if (days !== 0) {
+                  metaHtml = `
+                    <div class="event-meta">
+                      <span class="countdown ${countdown.class}">${countdown.text}</span>
+                    </div>`;
+                }
+
+                return `
+                  <div class="event ${event.type}">
+                    <div class="event-title">${event.title}${locationBadge}</div>
+                    <div class="event-desc">${event.desc}</div>
+                    ${metaHtml}
+                  </div>
+                `;
+              }).join('')}
+            </div>
+          `;
+
+          timeline.appendChild(card);
+          return;
+        }
+
+        // Regular pregnancy week cards
+        if (weekData.week === currentWeek) {
+          card.classList.add('current');
+        } else if (weekData.week < currentWeek) {
+          card.classList.add('past');
+        }
+
+        const weekDate = getDateForWeek(weekData.week);
+        const weekDateStr = formatDateWithYear(weekDate);
+
+        card.innerHTML = `
+          <div class="week-marker"></div>
+          <div class="card-content">
+            <div class="week-header">
+              <div class="week-number">Uke ${weekData.week}</div>
+              <div class="week-date">${weekDateStr}</div>
+            </div>
+            <div class="week-title">${weekData.title}</div>
+            ${weekData.events.map(event => {
+              const locationBadge = event.location ? `<span class="oslo-badge">${event.location}</span>` : '';
+
+              let metaHtml = '';
+              if (event.fixedDate) {
+                const days = daysUntil(event.fixedDate);
+                const countdown = getCountdownText(days);
+                metaHtml = `
+                  <div class="event-meta">
+                    <span class="event-fixed-date">${formatDateWithYear(event.fixedDate)}</span>
+                    <span class="countdown ${countdown.class}">${countdown.text}</span>
+                  </div>`;
+              } else if (event.showDate) {
+                const eventDate = getDateForWeek(weekData.week);
+                const days = daysUntil(eventDate);
+                const countdown = getCountdownText(days);
+                if (days !== 0) {
+                  metaHtml = `
+                    <div class="event-meta">
+                      <span class="countdown ${countdown.class}">${countdown.text}</span>
+                    </div>`;
+                }
+              }
+
+              return `
+                <div class="event ${event.type}">
+                  <div class="event-title">${event.title}${locationBadge}</div>
+                  <div class="event-desc">${event.desc}</div>
+                  ${metaHtml}
+                </div>
+              `;
+            }).join('')}
+          </div>
+        `;
+
+        timeline.appendChild(card);
+      });
+    }
+
+    function scrollToCurrentWeek() {
+      const currentCard = document.querySelector('.week-card.current');
+      if (currentCard) {
+        isUserScrolling = false;
+        setTimeout(() => {
+          currentCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          setTimeout(() => { isUserScrolling = true; }, 500);
+        }, 100);
+      }
+    }
+
+    function updateFromWeek() {
+      currentWeek = parseInt(weekInput.value) || 8;
+      currentWeek = Math.max(0, Math.min(42, currentWeek));
+      weekInput.value = currentWeek;
+      localStorage.setItem('babytid_week', currentWeek);
+      renderKeyDates();
+      renderTimeline();
+      scrollToCurrentWeek();
+    }
+
+    // Load saved week
+    const savedWeek = localStorage.getItem('babytid_week');
+    if (savedWeek) {
+      currentWeek = parseInt(savedWeek);
+      weekInput.value = currentWeek;
+    }
+
+    weekInput.addEventListener('change', updateFromWeek);
+
+    const header = document.querySelector('header');
+    let isUserScrolling = true;
+
+    renderKeyDates();
+    renderTimeline();
+    scrollToCurrentWeek();
+
+    window.addEventListener('scroll', () => {
+      header.classList.toggle('scrolled', window.scrollY > 50);
+
+      // Update current week based on scroll position
+      if (isUserScrolling) {
+        const cards = document.querySelectorAll('.week-card');
+        const headerHeight = header.offsetHeight;
+        const viewportCenter = window.scrollY + headerHeight + (window.innerHeight - headerHeight) / 3;
+
+        let closestCard = null;
+        let closestDistance = Infinity;
+
+        cards.forEach(card => {
+          const rect = card.getBoundingClientRect();
+          const cardTop = window.scrollY + rect.top;
+          const distance = Math.abs(cardTop - viewportCenter);
+
+          if (distance < closestDistance) {
+            closestDistance = distance;
+            closestCard = card;
+          }
+        });
+
+        if (closestCard) {
+          const weekNum = closestCard.querySelector('.week-number');
+          if (weekNum) {
+            const match = weekNum.textContent.match(/\d+/);
+            if (match) {
+              const newWeek = parseInt(match[0]);
+              if (newWeek !== currentWeek) {
+                currentWeek = newWeek;
+                weekInput.value = currentWeek;
+                localStorage.setItem('babytid_week', currentWeek);
+                renderKeyDates();
+
+                // Update card styling
+                cards.forEach(c => {
+                  const cWeekNum = c.querySelector('.week-number');
+                  if (cWeekNum) {
+                    const cMatch = cWeekNum.textContent.match(/\d+/);
+                    if (cMatch) {
+                      const cWeek = parseInt(cMatch[0]);
+                      c.classList.remove('current', 'past');
+                      if (cWeek === currentWeek) {
+                        c.classList.add('current');
+                      } else if (cWeek < currentWeek) {
+                        c.classList.add('past');
+                      }
+                    }
+                  }
+                });
+              }
+            }
+          }
+        }
+      }
+    });
+  </script>
+</body>
+</html>
