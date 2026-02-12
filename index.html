@@ -581,7 +581,7 @@
     <h1>Babytid</h1>
     <p style="color: #7a9a9a; font-size: 0.9rem; font-weight: 400;">Svangerskapskalender for Norge</p>
     <div class="date-selector" id="dateSelector">
-      <label for="dueDate">Termin:</label>
+      <label for="dueDate" id="dateLabel">Termin:</label>
       <input type="date" id="dueDate">
       <div id="statusDisplay" class="current-week-display"></div>
     </div>
@@ -1479,14 +1479,20 @@
           cards.forEach(c => c.classList.remove('current'));
           closestCard.classList.add('current');
 
-          // Update status display based on whether we're in post-birth section
+          // Update status display and label based on whether we're in post-birth section
           const isPostBirth = closestCard.classList.contains('post-birth');
           const weekLabel = closestCard.querySelector('.week-number');
+          const dateLabel = document.getElementById('dateLabel');
 
           if (isPostBirth && weekLabel) {
             // Show baby's age from the card
             statusDisplay.textContent = weekLabel.textContent;
             statusDisplay.className = 'current-week-display status-born';
+            // Change label and show birth date
+            dateLabel.textContent = 'Født:';
+            if (birthDate) {
+              dueDateInput.value = birthDate.toISOString().split('T')[0];
+            }
           } else if (weekLabel && dueDate) {
             // Show pregnancy week
             const weekMatch = weekLabel.textContent.match(/Uke (\d+)/);
@@ -1494,6 +1500,9 @@
               statusDisplay.textContent = `Uke ${weekMatch[1]}`;
               statusDisplay.className = 'current-week-display status-pregnant';
             }
+            // Change label back and show due date
+            dateLabel.textContent = 'Termin:';
+            dueDateInput.value = dueDate.toISOString().split('T')[0];
           }
         }
       }
