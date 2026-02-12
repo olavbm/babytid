@@ -1478,6 +1478,23 @@
           // Remove current from all cards and add to closest
           cards.forEach(c => c.classList.remove('current'));
           closestCard.classList.add('current');
+
+          // Update status display based on whether we're in post-birth section
+          const isPostBirth = closestCard.classList.contains('post-birth');
+          const weekLabel = closestCard.querySelector('.week-number');
+
+          if (isPostBirth && weekLabel) {
+            // Show baby's age from the card
+            statusDisplay.textContent = weekLabel.textContent;
+            statusDisplay.className = 'current-week-display status-born';
+          } else if (weekLabel && dueDate) {
+            // Show pregnancy week
+            const weekMatch = weekLabel.textContent.match(/Uke (\d+)/);
+            if (weekMatch) {
+              statusDisplay.textContent = `Uke ${weekMatch[1]}`;
+              statusDisplay.className = 'current-week-display status-pregnant';
+            }
+          }
         }
       }
     });
