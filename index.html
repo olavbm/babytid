@@ -93,30 +93,68 @@
     }
 
     .timeline {
-      max-width: 700px;
+      max-width: 800px;
       margin: 0 auto;
       padding: 2rem 1rem 4rem;
       position: relative;
     }
 
     .timeline::before {
-      content: '';
+      display: none;
+    }
+
+    .timeline-path {
       position: absolute;
-      left: 50%;
-      transform: translateX(-50%);
-      width: 2px;
+      top: 0;
+      left: 0;
+      width: 100%;
       height: 100%;
-      background: linear-gradient(to bottom, #e8e4df, #d9d4ce, #e8e4df);
-      border-radius: 2px;
+      pointer-events: none;
+      overflow: visible;
+      z-index: 0;
+    }
+
+    .timeline-path svg {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      overflow: visible;
+    }
+
+    .timeline-path path {
+      fill: none;
+      stroke: url(#pathGradient);
+      stroke-width: 4;
+      stroke-linecap: round;
+      stroke-dasharray: 15 10;
+    }
+
+    .timeline-path path.solid {
+      stroke: #e8e4df;
+      stroke-width: 10;
+      stroke-dasharray: none;
+      opacity: 0.5;
     }
 
     .week-card {
       position: relative;
-      margin-bottom: 2rem;
+      margin-bottom: 2.5rem;
       opacity: 0.6;
       transform: scale(0.95) translateY(8px);
       transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
     }
+
+    /* Winding path effect - smooth S-curves */
+    .week-card:nth-child(8n+1) { --sway: -15px; --side: right; }
+    .week-card:nth-child(8n+2) { --sway: -45px; --side: right; }
+    .week-card:nth-child(8n+3) { --sway: -60px; --side: right; }
+    .week-card:nth-child(8n+4) { --sway: -45px; --side: right; }
+    .week-card:nth-child(8n+5) { --sway: 15px; --side: left; }
+    .week-card:nth-child(8n+6) { --sway: 45px; --side: left; }
+    .week-card:nth-child(8n+7) { --sway: 60px; --side: left; }
+    .week-card:nth-child(8n+8) { --sway: 45px; --side: left; }
 
     .week-card.current {
       opacity: 1;
@@ -137,15 +175,16 @@
 
     .week-marker {
       position: absolute;
-      left: 50%;
+      left: calc(50% + var(--sway, 0px));
       transform: translateX(-50%);
-      width: 12px;
-      height: 12px;
+      width: 14px;
+      height: 14px;
       background: #d9d4ce;
       border-radius: 50%;
       border: 3px solid #fff;
       z-index: 1;
       transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
     }
 
     .week-card.current .week-marker {
@@ -172,19 +211,26 @@
     }
 
     .card-content {
+      position: relative;
+      z-index: 2;
       background: #fff;
-      border-radius: 12px;
+      border-radius: 16px;
       padding: 1.25rem 1.5rem;
-      margin-left: calc(50% + 30px);
-      width: calc(50% - 40px);
+      width: calc(50% - 100px);
       border: 1px solid rgba(0, 0, 0, 0.04);
       box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
       transition: all 0.3s ease;
+      /* Default: card on right when path swings left */
+      margin-left: calc(50% + 50px);
     }
 
-    .week-card:nth-child(even) .card-content {
-      margin-left: 10px;
-      margin-right: calc(50% + 30px);
+    /* When path swings right (positive sway), card goes left */
+    .week-card:nth-child(8n+5) .card-content,
+    .week-card:nth-child(8n+6) .card-content,
+    .week-card:nth-child(8n+7) .card-content,
+    .week-card:nth-child(8n+8) .card-content {
+      margin-left: 50px;
+      margin-right: calc(50%);
     }
 
     .week-header {
@@ -559,19 +605,32 @@
     }
 
     @media (max-width: 600px) {
-      .timeline::before {
-        left: 20px;
+      .week-card {
+        --sway: 0px !important;
+      }
+
+      .week-card:nth-child(6n+1),
+      .week-card:nth-child(6n+2),
+      .week-card:nth-child(6n+3),
+      .week-card:nth-child(6n+4),
+      .week-card:nth-child(6n+5),
+      .week-card:nth-child(6n+6) {
+        --sway: 0px;
       }
 
       .week-marker {
-        left: 20px;
+        left: 24px !important;
       }
 
       .card-content,
       .week-card:nth-child(even) .card-content {
-        margin-left: 50px;
-        margin-right: 0;
-        width: calc(100% - 60px);
+        margin-left: 54px !important;
+        margin-right: 10px !important;
+        width: calc(100% - 64px) !important;
+      }
+
+      .timeline-path path {
+        stroke-width: 2;
       }
     }
   </style>
@@ -1224,7 +1283,7 @@
     }
 
     function renderTimeline() {
-      timeline.innerHTML = '';
+      timeline.innerHTML = '<div class="timeline-path"><svg></svg></div>';
       let lastTrimester = 1;
       const weeks = getWeeksData();
       const dates = getKeyDates();
@@ -1265,6 +1324,7 @@
             updateStatusDisplay();
             renderTimeline();
             renderKeyDates();
+            requestAnimationFrame(drawTimelinePath);
           });
 
           // Trigger confetti on scroll into view
@@ -1403,6 +1463,51 @@
       });
     }
 
+    function drawTimelinePath() {
+      const svg = document.querySelector('.timeline-path svg');
+      if (!svg) return;
+
+      const markers = document.querySelectorAll('.week-card .week-marker');
+      if (markers.length < 2) return;
+
+      const timelineRect = timeline.getBoundingClientRect();
+      const points = [];
+
+      markers.forEach(marker => {
+        const rect = marker.getBoundingClientRect();
+        points.push({
+          x: rect.left - timelineRect.left + rect.width / 2,
+          y: rect.top - timelineRect.top + rect.height / 2
+        });
+      });
+
+      // Build smooth curve path
+      let d = `M ${points[0].x} ${points[0].y}`;
+
+      for (let i = 1; i < points.length; i++) {
+        const prev = points[i - 1];
+        const curr = points[i];
+        const midY = (prev.y + curr.y) / 2;
+
+        // Use cubic bezier for smooth S-curves
+        d += ` C ${prev.x} ${midY}, ${curr.x} ${midY}, ${curr.x} ${curr.y}`;
+      }
+
+      svg.innerHTML = `
+        <defs>
+          <linearGradient id="pathGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stop-color="#5a9a9a" stop-opacity="0.3" />
+            <stop offset="40%" stop-color="#d9d4ce" />
+            <stop offset="60%" stop-color="#e8b4b8" />
+            <stop offset="100%" stop-color="#c46b7a" stop-opacity="0.3" />
+          </linearGradient>
+        </defs>
+        <path class="solid" d="${d}" />
+        <path d="${d}" />
+      `;
+      svg.style.height = timeline.scrollHeight + 'px';
+    }
+
     function scrollToCurrentWeek() {
       const currentCard = document.querySelector('.week-card.current');
       if (currentCard) {
@@ -1426,7 +1531,10 @@
       updateStatusDisplay();
       renderKeyDates();
       renderTimeline();
-      scrollToCurrentWeek();
+      setTimeout(() => {
+        drawTimelinePath();
+        scrollToCurrentWeek();
+      }, 50);
     }
 
     // Load saved dates
@@ -1449,7 +1557,16 @@
     updateStatusDisplay();
     renderKeyDates();
     renderTimeline();
-    scrollToCurrentWeek();
+    // Wait for layout to stabilize before drawing path
+    setTimeout(() => {
+      drawTimelinePath();
+      scrollToCurrentWeek();
+    }, 100);
+
+    // Redraw path on window resize
+    window.addEventListener('resize', () => {
+      requestAnimationFrame(drawTimelinePath);
+    });
 
     window.addEventListener('scroll', () => {
       header.classList.toggle('scrolled', window.scrollY > 50);
