@@ -296,6 +296,30 @@
       margin-bottom: 0;
     }
 
+    .event[data-source] {
+      cursor: pointer;
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+      position: relative;
+    }
+
+    .event[data-source]:hover {
+      transform: translateX(4px);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    }
+
+    .event[data-source]::after {
+      content: "↗";
+      position: absolute;
+      top: 0.5rem;
+      right: 0.5rem;
+      font-size: 0.75rem;
+      color: #bbb;
+    }
+
+    .event[data-source]:hover::after {
+      color: #5a9a9a;
+    }
+
     .event.medical {
       border-color: #d4847a;
       background: #fdf8f7;
@@ -981,7 +1005,7 @@
           week: 10,
           title: "Fosterdiagnostikk tilbys",
           events: [
-            { type: "medical", title: "NIPT-test (valgfritt)", desc: "Blodprøve for kromosomavvik. Gratis for 35+ år, ellers privat ca. 6000-11000 kr", showDate: true },
+            { type: "medical", title: "NIPT-test (valgfritt)", desc: "Blodprøve for kromosomavvik. Gratis for 35+ år, ellers privat ca. 6000-11000 kr", showDate: true, source: "https://www.regjeringen.no/no/aktuelt/fra-januar-vil-gravide-over-35-ar-fa-tilbud-om-nipt/id2885986/" },
             { type: "info", title: "Tidligste tidspunkt", desc: "NIPT kan tas fra uke 10+0. Anbefales uke 10-11 for svar innen uke 12" }
           ]
         },
@@ -989,7 +1013,7 @@
           week: 11,
           title: "Tidlig ultralyd",
           events: [
-            { type: "medical", title: "Ultralyd uke 11-14", desc: "Tilbys alle gravide fra 2022. Kombinert med NIPT ved behov (KUB-test)", showDate: true }
+            { type: "medical", title: "Ultralyd uke 11-14", desc: "Tilbys alle gravide fra 2022. Kombinert med NIPT ved behov (KUB-test)", showDate: true, source: "https://www.oslo-universitetssykehus.no/behandlinger/tidlig-ultralyd-med-nakketranslusensmaling/" }
           ]
         },
         {
@@ -1019,7 +1043,7 @@
           week: 18,
           title: "Rutineultralyd",
           events: [
-            { type: "medical", title: "Ultralyd uke 17-19", desc: "Detaljert undersøkelse av fosterets organer, morkakeplassering, termin bekreftes", showDate: true },
+            { type: "medical", title: "Ultralyd uke 17-19", desc: "Detaljert undersøkelse av fosterets organer, morkakeplassering, termin bekreftes", showDate: true, source: "https://www.helsenorge.no/undersokelse-og-behandling/ultralyd-av-gravide/" },
             { type: "info", title: "Kjønn", desc: "Kan ofte sees hvis ønskelig" }
           ]
         },
@@ -1035,14 +1059,15 @@
           week: 22,
           title: "Planlegging starter",
           events: [
-            { type: "admin", title: "NAV foreldrepenger", desc: "Du kan søke fra uke 22. Les om rettigheter på nav.no/foreldrepenger", fixedDate: dates.navSøknadAnbefalt },
+            { type: "admin", title: "NAV foreldrepenger", desc: "Du kan søke fra uke 22. Les om rettigheter på nav.no/foreldrepenger", fixedDate: dates.navSøknadAnbefalt, source: "https://www.nav.no/foreldrepenger" },
             { type: "admin", title: "Velg fødested", desc: "Begynn å tenke på hvor du vil føde. Jordmor sender henvisning." },
             dates.barnehageFrist > new Date() ? {
               type: "deadline",
               title: "Barnehage søknadsfrist",
               desc: "Hovedopptak for barnehageplass med oppstart aug/sept. Søk på oslo.kommune.no/barnehage",
               location: "Oslo",
-              fixedDate: dates.barnehageFrist
+              fixedDate: dates.barnehageFrist,
+              source: "https://www.oslo.kommune.no/barnehage/soke-barnehageplass/"
             } : null
           ].filter(Boolean)
         },
@@ -1051,7 +1076,7 @@
           title: "Viktige undersøkelser",
           events: [
             { type: "medical", title: "Svangerskapskontroll", desc: "Blodtrykk, symfyse-fundus mål, urinprøve, lytte på hjertelyd", showDate: true },
-            { type: "medical", title: "Kikhostevaksine", desc: "Anbefales fra uke 24. Gratis. Beskytter barnet frem til 3 mnd alder.", showDate: true },
+            { type: "medical", title: "Kikhostevaksine", desc: "Anbefales fra uke 24. Gratis. Beskytter barnet frem til 3 mnd alder.", showDate: true, source: "https://www.fhi.no/va/kikhostevaksine-til-gravide/om-innforingen-av-kikhostevaksine-til-gravide/" },
             { type: "medical", title: "RhD-test", desc: "Rhesus-negative: Blodprøve for å sjekke fosterets blodtype" },
             { type: "medical", title: "Glukosebelastning", desc: "Tilbys førstegangs­fødende 25+ eller ved risikofaktorer" }
           ]
@@ -1060,8 +1085,8 @@
           week: 25,
           title: "Foreldrepermisjon",
           events: [
-            { type: "admin", title: "Planlegg permisjonen", desc: `Diskuter fordeling med partner. 100%: t.o.m. ${formatDateWithYear(dates.permisjon49Slutt)} (49 uker). 80%: t.o.m. ${formatDateWithYear(dates.permisjon59Slutt)} (59 uker).` },
-            { type: "info", title: "Fedrekvote", desc: "15 uker er forbeholdt far/medmor. Må tas ut, ellers tapes de." }
+            { type: "admin", title: "Planlegg permisjonen", desc: `Diskuter fordeling med partner. 100%: t.o.m. ${formatDateWithYear(dates.permisjon49Slutt)} (49 uker). 80%: t.o.m. ${formatDateWithYear(dates.permisjon59Slutt)} (59 uker).`, source: "https://www.nav.no/foreldrepenger" },
+            { type: "info", title: "Fedrekvote", desc: "15 uker er forbeholdt far/medmor. Må tas ut, ellers tapes de.", source: "https://www.nav.no/foreldrepenger#hvor-lenge" }
           ]
         },
         {
@@ -1113,8 +1138,8 @@
           week: 37,
           title: "Fullbårent - permisjon kan starte",
           events: [
-            { type: "info", title: "Barnet er klart", desc: "Regnes som fullbårent fra uke 37. Trygt å føde fra nå." },
-            { type: "admin", title: "Svangerskapspermisjon", desc: "3 uker før termin er forbeholdt mor. Du kan starte permisjonen fra nå.", fixedDate: dates.permisjonStart }
+            { type: "info", title: "Barnet er klart", desc: "Regnes som fullbårent fra uke 37. Trygt å føde fra nå.", source: "https://www.helsenorge.no/fodsel/fodselens-faser/" },
+            { type: "admin", title: "Svangerskapspermisjon", desc: "3 uker før termin er forbeholdt mor. Du kan starte permisjonen fra nå.", fixedDate: dates.permisjonStart, source: "https://www.nav.no/foreldrepenger#for-fodsel" }
           ]
         },
         {
@@ -1192,8 +1217,8 @@
           daysAfterBirth: 42,
           title: "6 uker - stor kontroll",
           events: [
-            { type: "medical", title: "6-ukerskontroll", desc: "Grundig undersøkelse av baby hos lege: reflekser, hofter, øyne, ører, hud." },
-            { type: "medical", title: "Første vaksine!", desc: "Rotavirus (dråper), DTP-IPV-Hib-HepB (6-i-1), Pneumokokk." },
+            { type: "medical", title: "6-ukerskontroll", desc: "Grundig undersøkelse av baby hos lege: reflekser, hofter, øyne, ører, hud.", source: "https://www.helsenorge.no/hjelpetilbud-i-kommunene/helsestasjon-0-5-ar/6-ukerskontroll/" },
+            { type: "medical", title: "Første vaksine!", desc: "Rotavirus (dråper), DTP-IPV-Hib-HepB (6-i-1), Pneumokokk.", source: "https://www.fhi.no/va/barnevaksinasjonsprogrammet/" },
             { type: "medical", title: "Barselkontroll for mor", desc: "Sjekk av hvordan kroppen har kommet seg etter fødselen." },
             { type: "admin", title: "Foreldrepenger", desc: "Aktivitetskrav for mor starter nå (10 ukers fritak for barn født etter 2. aug 2024)." }
           ]
@@ -1204,7 +1229,7 @@
           title: "3 måneder",
           events: [
             { type: "medical", title: "Helsestasjonskontroll", desc: "Vekst, utvikling, samspill mellom foreldre og barn." },
-            { type: "medical", title: "Vaksiner dose 2", desc: "Rotavirus, DTP-IPV-Hib-HepB, Pneumokokk." }
+            { type: "medical", title: "Vaksiner dose 2", desc: "Rotavirus, DTP-IPV-Hib-HepB, Pneumokokk.", source: "https://www.fhi.no/va/barnevaksinasjonsprogrammet/" }
           ]
         },
         {
@@ -1220,7 +1245,7 @@
           daysAfterBirth: 150,
           title: "5 måneder",
           events: [
-            { type: "medical", title: "Vaksiner dose 3", desc: "DTP-IPV-Hib-HepB, Pneumokokk (siste rotavirus var ved 3 mnd)." }
+            { type: "medical", title: "Vaksiner dose 3", desc: "DTP-IPV-Hib-HepB, Pneumokokk (siste rotavirus var ved 3 mnd).", source: "https://www.fhi.no/va/barnevaksinasjonsprogrammet/" }
           ]
         },
         {
@@ -1229,7 +1254,7 @@
           title: "6 måneder",
           events: [
             { type: "medical", title: "Helsestasjonskontroll", desc: "Halvårskontroll: syn, hørsel, motorikk, sosial utvikling." },
-            { type: "deadline", title: "Frist: Registrer barnets navn", desc: "Barnets navn må meldes til Skatteetaten innen 6 måneder etter fødsel." },
+            { type: "deadline", title: "Frist: Registrer barnets navn", desc: "Barnets navn må meldes til Skatteetaten innen 6 måneder etter fødsel.", source: "https://www.skatteetaten.no/person/folkeregister/fodsel-og-navnevalg/navnevalg/" },
             { type: "info", title: "Fast føde", desc: "Mange starter med smaksprøver og grøt nå." }
           ]
         },
@@ -1256,7 +1281,7 @@
           events: [
             { type: "milestone", title: "Gratulerer med ettårsdagen!", desc: "Et helt år som foreldre!" },
             { type: "medical", title: "12-månederskontroll", desc: "Stor kontroll med lege. Vekst, utvikling, syn, hørsel." },
-            { type: "medical", title: "Vaksiner dose 4", desc: "DTP-IPV-Hib-HepB, Pneumokokk (siste dose av disse)." },
+            { type: "medical", title: "Vaksiner dose 4", desc: "DTP-IPV-Hib-HepB, Pneumokokk (siste dose av disse).", source: "https://www.fhi.no/va/barnevaksinasjonsprogrammet/" },
             { type: "admin", title: "Kontantstøtte", desc: "Kan søkes for barn 1-2 år som ikke går i barnehage med offentlig støtte." },
             { type: "info", title: "Foreldrepermisjon 100%", desc: "Ved 100% dekningsgrad: Permisjonen nærmer seg slutten (49 uker)." }
           ]
@@ -1266,7 +1291,7 @@
           daysAfterBirth: 456,
           title: "15 måneder",
           events: [
-            { type: "medical", title: "MMR-vaksine", desc: "Vaksine mot meslinger, kusma og røde hunder." },
+            { type: "medical", title: "MMR-vaksine", desc: "Vaksine mot meslinger, kusma og røde hunder.", source: "https://www.fhi.no/va/barnevaksinasjonsprogrammet/" },
             { type: "medical", title: "Helsestasjonskontroll", desc: "Utvikling, språk, motorikk." }
           ]
         },
@@ -1292,7 +1317,7 @@
           daysAfterBirth: 1095,
           title: "3 år",
           events: [
-            { type: "deadline", title: "Frist: Bruk opp foreldrepenger", desc: "Alle foreldrepenger må være tatt ut før barnet fyller 3 år." }
+            { type: "deadline", title: "Frist: Bruk opp foreldrepenger", desc: "Alle foreldrepenger må være tatt ut før barnet fyller 3 år.", source: "https://www.nav.no/foreldrepenger#hvor-lenge" }
           ]
         },
         {
@@ -1414,8 +1439,9 @@
                     </div>`;
                 }
 
+                const sourceAttr = event.source ? `data-source="${event.source}"` : '';
                 return `
-                  <div class="event ${event.type}">
+                  <div class="event ${event.type}" ${sourceAttr}>
                     <div class="event-title">${event.title}${locationBadge}</div>
                     <div class="event-desc">${event.desc}</div>
                     ${metaHtml}
@@ -1472,8 +1498,9 @@
                 }
               }
 
+              const sourceAttr = event.source ? `data-source="${event.source}"` : '';
               return `
-                <div class="event ${event.type}">
+                <div class="event ${event.type}" ${sourceAttr}>
                   <div class="event-title">${event.title}${locationBadge}</div>
                   <div class="event-desc">${event.desc}</div>
                   ${metaHtml}
@@ -1590,6 +1617,14 @@
     // Redraw path on window resize
     window.addEventListener('resize', () => {
       requestAnimationFrame(drawTimelinePath);
+    });
+
+    // Handle clicks on events with sources
+    document.addEventListener('click', (e) => {
+      const event = e.target.closest('.event[data-source]');
+      if (event) {
+        window.open(event.dataset.source, '_blank', 'noopener');
+      }
     });
 
     window.addEventListener('scroll', () => {
