@@ -892,18 +892,24 @@
       // Employer notification: 12 weeks before for >1 year leave
       const arbeidsgiverVarsel = addWeeks(permisjonStart, -12);
 
-      // Foreldrepenger end (49 weeks at 100% or 59 at 80%)
+      // Foreldrepenger end (49 weeks at 100% or 61 at 80%)
       const permisjon49Slutt = addWeeks(due, 49);
-      const permisjon59Slutt = addWeeks(due, 59);
+      const permisjon61Slutt = addWeeks(due, 61);
 
-      // Barnehage
+      // Barnehage: rett til plass fra aug det året barnet fyller 1,
+      // men sep-nov-fødte har rett fra måneden de fyller 1.
+      // Des-fødte: rett fra aug året de fyller 2.
       const birthYear = due.getFullYear();
       const birthMonth = due.getMonth();
-      // If born before August, apply by March same year
-      // If born August or later, apply by March next year
-      let barnehageFristYear = birthMonth < 7 ? birthYear : birthYear + 1;
+      let barnehageFristYear = birthMonth === 11 ? birthYear + 2 : birthYear + 1;
       const barnehageFrist = new Date(barnehageFristYear, 2, 1);
-      const barnehageOppstart = new Date(barnehageFristYear, 7, 15);
+      let barnehageOppstart;
+      if (birthMonth >= 8 && birthMonth <= 10) {
+        // Sep-nov-fødte starter måneden de fyller 1
+        barnehageOppstart = new Date(birthYear + 1, birthMonth, 15);
+      } else {
+        barnehageOppstart = new Date(barnehageFristYear, 7, 15);
+      }
 
       // Baby's 1 year birthday (relevant for permisjon planning)
       const baby1År = addDays(due, 365);
@@ -914,7 +920,7 @@
         navSøknadAnbefalt,
         arbeidsgiverVarsel,
         permisjon49Slutt,
-        permisjon59Slutt,
+        permisjon61Slutt,
         barnehageFrist,
         barnehageOppstart,
         baby1År
@@ -982,7 +988,7 @@
           week: 2,
           title: "Eggløsning og befruktning",
           events: [
-            { type: "info", title: "Befruktning skjer", desc: "Eggløsning skjer vanligvis rundt dag 14. Befruktning kan skje i løpet av 12-24 timer." }
+            { type: "info", title: "Befruktning skjer", desc: "Eggløsning skjer vanligvis rundt dag 14. Egget kan befruktes i ca. 24 timer etter eggløsning.", source: "https://sml.snl.no/befruktning_hos_mennesket" }
           ]
         },
         {
@@ -1012,15 +1018,15 @@
           week: 10,
           title: "Fosterdiagnostikk tilbys",
           events: [
-            { type: "medical", title: "NIPT-test (valgfritt)", desc: "Blodprøve for kromosomavvik. Gratis for 35+ år, ellers privat ca. 6000-11000 kr", showDate: true, source: "https://www.regjeringen.no/no/aktuelt/fra-januar-vil-gravide-over-35-ar-fa-tilbud-om-nipt/id2885986/" },
-            { type: "info", title: "Tidligste tidspunkt", desc: "NIPT kan tas fra uke 10+0. Anbefales uke 10-11 for svar innen uke 12" }
+            { type: "medical", title: "NIPT-test (valgfritt)", desc: "Blodprøve for kromosomavvik. Gratis for 35+ år, ellers egenandel ca. 6000 kr i offentlig helsevesen", showDate: true, source: "https://www.oslo-universitetssykehus.no/behandlinger/nipt/" },
+            { type: "info", title: "Tidligste tidspunkt", desc: "NIPT kan tas fra uke 10+0. Tilbys vanligvis i forbindelse med tidlig ultralyd uke 11-14." }
           ]
         },
         {
           week: 11,
           title: "Tidlig ultralyd",
           events: [
-            { type: "medical", title: "Ultralyd uke 11-14", desc: "Tilbys alle gravide fra 2022. Kombinert med NIPT ved behov (KUB-test)", showDate: true, source: "https://www.oslo-universitetssykehus.no/behandlinger/tidlig-ultralyd-med-nakketranslusensmaling/" }
+            { type: "medical", title: "Ultralyd uke 11-14", desc: "Tilbys alle gravide fra 2022. Kombinert med NIPT ved behov.", showDate: true, source: "https://www.oslo-universitetssykehus.no/behandlinger/tidlig-ultralyd-med-nakketranslusensmaling/" }
           ]
         },
         {
@@ -1034,9 +1040,9 @@
         },
         {
           week: 14,
-          title: "Svangerskapskontroll",
+          title: "Oppfølging",
           events: [
-            { type: "medical", title: "Kontroll hos jordmor", desc: "Oppfølging, vekt, blodtrykk, urinprøve", showDate: true }
+            { type: "info", title: "Mellom kontrollene", desc: "Neste rutinekontroll er ved uke 24. Kontakt jordmor ved bekymringer." }
           ]
         },
         {
@@ -1059,7 +1065,7 @@
           title: "Halvveis!",
           events: [
             { type: "info", title: "Fosterbevegelser", desc: "De fleste kjenner tydelige spark og bevegelser nå" },
-            { type: "medical", title: "Svangerskapskontroll", desc: "Regelmessige kontroller hver 4. uke", showDate: true }
+            { type: "info", title: "Halvveis", desc: "Neste kontroll er ved uke 24, deretter hver 4. uke." }
           ]
         },
         {
@@ -1071,7 +1077,7 @@
             dates.barnehageFrist > new Date() ? {
               type: "deadline",
               title: "Barnehage søknadsfrist",
-              desc: "Hovedopptak for barnehageplass med oppstart aug/sept. Søk på oslo.kommune.no/barnehage",
+              desc: `Hovedopptak for barnehageplass med oppstart ${formatDate(dates.barnehageOppstart)}. Søk på oslo.kommune.no/barnehage`,
               location: "Oslo",
               fixedDate: dates.barnehageFrist,
               source: "https://www.oslo.kommune.no/barnehage/soke-barnehageplass/"
@@ -1092,7 +1098,7 @@
           week: 25,
           title: "Foreldrepermisjon",
           events: [
-            { type: "admin", title: "Planlegg permisjonen", desc: `Diskuter fordeling med partner. 100%: t.o.m. ${formatDateWithYear(dates.permisjon49Slutt)} (49 uker). 80%: t.o.m. ${formatDateWithYear(dates.permisjon59Slutt)} (59 uker).`, source: "https://www.nav.no/foreldrepenger" },
+            { type: "admin", title: "Planlegg permisjonen", desc: `Diskuter fordeling med partner. 100%: t.o.m. ${formatDateWithYear(dates.permisjon49Slutt)} (49 uker). 80%: t.o.m. ${formatDateWithYear(dates.permisjon61Slutt)} (61 uker).`, source: "https://www.nav.no/foreldrepenger" },
             { type: "info", title: "Fedrekvote", desc: "15 uker er forbeholdt far/medmor. Må tas ut, ellers tapes de.", source: "https://www.nav.no/foreldrepenger#hvor-lenge" }
           ]
         },
@@ -1103,7 +1109,7 @@
           events: [
             { type: "medical", title: "Svangerskapskontroll", desc: "Kontroller blir hyppigere: hver 2.-4. uke", showDate: true },
             { type: "medical", title: "Anti-D sprøyte", desc: "Rhesus-negative med RhD-positivt foster får første sprøyte nå" },
-            { type: "admin", title: "Fødselskurs", desc: "Meld deg på kurs. Oslo: ca. 600-1200 kr privat, noen gratis via sykehus" }
+            { type: "admin", title: "Fødselskurs", desc: "Meld deg på kurs. Ca. 1000-2000 kr per par. Noen sykehus tilbyr gratis kurs (ofte digitalt)." }
           ]
         },
         {
@@ -1118,7 +1124,7 @@
           week: 32,
           title: "Svangerskapskontroll",
           events: [
-            { type: "medical", title: "Kontroll hos jordmor", desc: "Fosterstilling, vekst, trivsel, blodtrykk", showDate: true },
+            { type: "medical", title: "Kontroll hos jordmor", desc: "Vekst, trivsel, blodtrykk, symfyse-fundus mål", showDate: true },
             { type: "admin", title: "Kontakt fødeavdeling", desc: "Få omvisning og informasjon om fødested" }
           ]
         },
@@ -1128,16 +1134,16 @@
           events: [
             { type: "admin", title: "Pakk fødebag", desc: "Ha klar bag med det du trenger til føde- og barselavdeling" },
             { type: "deadline", title: "Søk foreldrepenger NÅ", desc: `NAV anbefaler å søke 4-6 uker før. Frist: senest 3 mnd etter fødsel.`, showDate: true },
-            { type: "info", title: "Fosterstilling", desc: "De fleste babyer snur seg hodeleie nå. Seteleie? Snakk med jordmor." }
+            { type: "info", title: "Fosterstilling", desc: "De fleste babyer snur seg til hodeleie innen uke 36. Posisjon vurderes formelt ved neste kontroll." }
           ]
         },
         {
           week: 36,
           title: "Hyppige kontroller",
           events: [
-            { type: "medical", title: "Kontroll", desc: "Ukentlige eller annenhver uke kontroller starter", showDate: true },
-            { type: "medical", title: "Posisjon sjekkes", desc: "Bekrefter hodeleie. Seteleie kan kreve spesialistvurdering." },
-            { type: "medical", title: "Anti-D #2", desc: "Rhesus-negative: Andre sprøyte gis nå" },
+            { type: "medical", title: "Kontroll", desc: "Kontroller annenhver uke fra nå (uke 36, 38, 40)", showDate: true },
+            { type: "medical", title: "Fosterstilling vurderes", desc: "Formell vurdering av posisjon (Leopolds grep). Seteleie kan kreve ytre vending eller spesialistvurdering." },
+            { type: "medical", title: "Anti-D", desc: "Rhesus-negative: Andre sprøyte gis etter fødsel (innen 72 timer), ikke ved denne kontrollen.", source: "https://www.oslo-universitetssykehus.no/fag-og-forskning/nasjonale-og-regionale-tjenester/nasjonal-kompetansetjeneste-for-blodtypeserologi/informasjon-til-deg-som-gravid-og-rhd-negativ/" },
             { type: "info", title: "GBS", desc: "Norge screener ikke rutinemessig, men test kan gjøres ved risiko" }
           ]
         },
@@ -1169,15 +1175,15 @@
           week: 40,
           title: "Termin!",
           events: [
-            { type: "deadline", title: "Termindato", desc: "Bare ca. 5% føder på selve termindatoen. Normalt å føde uke 37-42.", fixedDate: dates.due },
-            { type: "medical", title: "Overtidskontroll", desc: "Ved termin+0 starter tettere oppfølging med kontroll hver 2-3 dag" }
+            { type: "deadline", title: "Termindato", desc: "Bare 5-10% føder på selve termindatoen. Normalt å føde uke 37-42.", fixedDate: dates.due },
+            { type: "medical", title: "Siste rutinekontroll", desc: "Kontroll hos jordmor/lege. Henvisning til sykehus for overtidskontroll ved uke 41.", showDate: true }
           ]
         },
         {
           week: 41,
           title: "Over termin",
           events: [
-            { type: "medical", title: "Hyppige kontroller", desc: "CTG (hjerteovervåkning), ultralyd for fostervann, generell vurdering", showDate: true },
+            { type: "medical", title: "Overtidskontroll på sykehus", desc: "Fra uke 41+0 til 41+3: CTG (hjerteovervåkning), ultralyd for fostervann, generell vurdering", showDate: true, source: "https://www.helsedirektoratet.no/retningslinjer/svangerskapsomsorgen/svangerskap-passert-termin" },
             { type: "medical", title: "Igangsetting vurderes", desc: "Diskusjon om induksjon. Vanlig å sette i gang før uke 42." }
           ]
         },
@@ -1216,7 +1222,7 @@
           daysAfterBirth: 28,
           title: "4 uker",
           events: [
-            { type: "medical", title: "Kontroll på helsestasjon", desc: "Vekt, lengde, hodeomkrets. Samtale om amming, søvn og foreldrerollen." }
+            { type: "medical", title: "Kontroll på helsestasjon", desc: "Vekt og hodeomkrets. Samtale om amming, søvn og foreldrerollen. Lengde måles først ved 3 mnd.", source: "https://www.helsenorge.no/hjelpetilbud-i-kommunene/helsestasjon-0-5-ar/4-ukerskontroll/" }
           ]
         },
         {
@@ -1225,9 +1231,9 @@
           title: "6 uker - stor kontroll",
           events: [
             { type: "medical", title: "6-ukerskontroll", desc: "Grundig undersøkelse av baby hos lege: reflekser, hofter, øyne, ører, hud.", source: "https://www.helsenorge.no/hjelpetilbud-i-kommunene/helsestasjon-0-5-ar/6-ukerskontroll/" },
-            { type: "medical", title: "Første vaksine!", desc: "Rotavirus (dråper), DTP-IPV-Hib-HepB (6-i-1), Pneumokokk.", source: "https://www.fhi.no/va/barnevaksinasjonsprogrammet/" },
+            { type: "medical", title: "Første vaksine!", desc: "Rotavirus dose 1 (dråper). DTP-IPV-Hib-HepB og Pneumokokk starter ved 3 mnd.", source: "https://www.fhi.no/va/barnevaksinasjonsprogrammet/" },
             { type: "medical", title: "Barselkontroll for mor", desc: "Sjekk av hvordan kroppen har kommet seg etter fødselen." },
-            { type: "admin", title: "Foreldrepenger", desc: "Aktivitetskrav for mor starter nå (10 ukers fritak for barn født etter 2. aug 2024)." }
+            { type: "admin", title: "Foreldrepenger", desc: "Mødrekvoten (6 uker etter fødsel) er snart over. Aktivitetskrav for mor starter fra uke 7.", source: "https://www.nav.no/foreldrepenger" }
           ]
         },
         {
@@ -1236,7 +1242,7 @@
           title: "3 måneder",
           events: [
             { type: "medical", title: "Helsestasjonskontroll", desc: "Vekst, utvikling, samspill mellom foreldre og barn." },
-            { type: "medical", title: "Vaksiner dose 2", desc: "Rotavirus, DTP-IPV-Hib-HepB, Pneumokokk.", source: "https://www.fhi.no/va/barnevaksinasjonsprogrammet/" }
+            { type: "medical", title: "Vaksiner", desc: "Rotavirus dose 2, DTP-IPV-Hib-HepB dose 1, Pneumokokk dose 1.", source: "https://www.fhi.no/va/barnevaksinasjonsprogrammet/" }
           ]
         },
         {
@@ -1252,7 +1258,7 @@
           daysAfterBirth: 150,
           title: "5 måneder",
           events: [
-            { type: "medical", title: "Vaksiner dose 3", desc: "DTP-IPV-Hib-HepB, Pneumokokk (siste rotavirus var ved 3 mnd).", source: "https://www.fhi.no/va/barnevaksinasjonsprogrammet/" }
+            { type: "medical", title: "Vaksiner", desc: "DTP-IPV-Hib-HepB dose 2, Pneumokokk dose 2 (siste rotavirus var ved 3 mnd).", source: "https://www.fhi.no/va/barnevaksinasjonsprogrammet/" }
           ]
         },
         {
@@ -1288,8 +1294,8 @@
           events: [
             { type: "milestone", title: "Gratulerer med ettårsdagen!", desc: "Et helt år som foreldre!" },
             { type: "medical", title: "12-månederskontroll", desc: "Stor kontroll med lege. Vekst, utvikling, syn, hørsel." },
-            { type: "medical", title: "Vaksiner dose 4", desc: "DTP-IPV-Hib-HepB, Pneumokokk (siste dose av disse).", source: "https://www.fhi.no/va/barnevaksinasjonsprogrammet/" },
-            { type: "admin", title: "Kontantstøtte", desc: "Kan søkes for barn 1-2 år som ikke går i barnehage med offentlig støtte." },
+            { type: "medical", title: "Vaksiner", desc: "DTP-IPV-Hib-HepB dose 3, Pneumokokk dose 3 (siste dose av disse).", source: "https://www.fhi.no/va/barnevaksinasjonsprogrammet/" },
+            { type: "admin", title: "Kontantstøtte", desc: "Kan søkes for barn 13-19 måneder som ikke går i barnehage med offentlig støtte." },
             { type: "info", title: "Foreldrepermisjon 100%", desc: "Ved 100% dekningsgrad: Permisjonen nærmer seg slutten (49 uker)." }
           ]
         },
@@ -1316,7 +1322,7 @@
           title: "2 år",
           events: [
             { type: "medical", title: "2-årskontroll", desc: "Språk, motorikk, sosial utvikling. Siste rutinemessige kontroll før 4 år." },
-            { type: "admin", title: "Kontantstøtte slutter", desc: "Kontantstøtte gis kun til barn mellom 1-2 år." }
+            { type: "admin", title: "Kontantstøtte slutter", desc: "Kontantstøtte gis kun til barn mellom 13-19 måneder." }
           ]
         },
         {
